@@ -10,6 +10,7 @@ module tb_ALU;
     reg  [2:0]      op;
     wire [XLEN-1:0] a, b;
     wire [XLEN-1:0] out;
+    wire eq, lt, ltu;
 
     int x, y;
 
@@ -17,7 +18,7 @@ module tb_ALU;
     assign b = y;
 
     ALU #(XLEN) alu
-        (a, b, op, sub, sra, out);
+        (a, b, op, sub, sra, out, eq, lt, ltu);
 
     `TEST_SUITE begin
         `TEST_CASE_SETUP begin
@@ -78,6 +79,28 @@ module tb_ALU;
         `TEST_CASE("and") begin
             op = 3'b111;
             #1ns `CHECK_EQUAL(out, x & y);
+        end
+
+        `TEST_CASE("compare pins") begin
+            x = -1;
+            y = 0;
+            #1ns;
+            `CHECK_EQUAL(lt, 1);
+            `CHECK_EQUAL(ltu, 0);
+            `CHECK_EQUAL(eq, 0);
+
+            x = 0;
+            y = -1;
+            #1ns;
+            `CHECK_EQUAL(lt, 0);
+            `CHECK_EQUAL(ltu, 1);
+            `CHECK_EQUAL(eq, 0);
+
+            x = y;
+            #1ns
+            `CHECK_EQUAL(lt, 0);
+            `CHECK_EQUAL(ltu, 0);
+            `CHECK_EQUAL(eq, 1);
         end
     end
 endmodule
