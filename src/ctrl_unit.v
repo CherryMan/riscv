@@ -1,5 +1,5 @@
 module CtrlUnit
- #(parameter XLEN = 32
+ #( parameter XLEN = 32
  )( input      [XLEN-1:0] inst
   , output     [2:0]      alu_op
   , output                alu_imm
