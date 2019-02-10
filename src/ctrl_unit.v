@@ -1,40 +1,31 @@
-`define ALU_IN1_RS1     0
-`define ALU_IN1_I_IMM   1
-`define ALU_IN1_U_IMM   2
-
-`define ALU_IN2_RS2     0
-`define ALU_IN2_PC      1
-
 module CtrlUnit
-  ( input      [6:0] opcode
-  , output           rd_w, is_branch, is_jmp, link_reg
-  , output reg [1:0] alu_in1
-  , output reg       alu_in2
+ #(parameter XLEN = 32
+ )( input      [XLEN-1:0] inst
+  , output     [2:0]      alu_op
+  , output                alu_imm
+  , output                alu_sub, alu_sra
+  , output                rd_w
+  , output                ld_upper, add_pc, jmp_reg
+  , output                is_branch, is_jmp, is_load, is_store
  );
 
-    assign rd_w      = |{inst_type_r, inst_type_i,
-                         inst_type_u, inst_type_j};
-    assign is_branch = inst_type_b;
-    assign is_jmp    = |{op_jal, op_jalr};
-    assign link_reg  = op_jalr;
-
-    always @* begin
-        if (op_auipc)
-            alu_in2 = `ALU_IN2_PC;
-        else
-            alu_in2 = `ALU_IN2_RS2;
-    end
-
-    always @* begin
-        if (inst_type_i)
-            alu_in1 = `ALU_IN1_I_IMM;
-        else if (inst_type_u)
-            alu_in1 = `ALU_IN1_U_IMM;
-        else
-            alu_in1 = `ALU_IN1_RS1;
-    end
+    wire [6:0] opcode = inst[6:0];
+    wire [2:0] fn3    = inst[14:12];
+    wire [6:0] fn7    = inst[31:25];
 
     wire
+      op_lui     = (7'b0110111 == opcode),
+      op_auipc   = (7'b0010111 == opcode),
+      op_opimm   = (7'b0010011 == opcode),
+      op_op      = (7'b0110011 == opcode),
+      op_jal     = (7'b1101111 == opcode),
+      op_jalr    = (7'b1100111 == opcode),
+      op_branch  = (7'b1100011 == opcode),
+      op_load    = (7'b0000011 == opcode),
+      op_store   = (7'b0100011 == opcode),
+      op_miscmem = (7'b0001111 == opcode),
+      op_system  = (7'b1110011 == opcode),
+
       inst_type_r = |{
         op_op
       },
@@ -47,20 +38,24 @@ module CtrlUnit
         op_lui,
         op_auipc
       },
-      inst_type_s = op_store,
       inst_type_b = op_branch,
-      inst_type_j = op_jal;
+      inst_type_j = op_jal,
+      inst_type_s = op_store;
 
-    wire 
-      op_lui     = (7'b0110111 == opcode),
-      op_auipc   = (7'b0010111 == opcode),
-      op_opimm   = (7'b0010111 == opcode),
-      op_op      = (7'b0110011 == opcode),
-      op_jal     = (7'b1101111 == opcode),
-      op_jalr    = (7'b1100111 == opcode),
-      op_branch  = (7'b1100011 == opcode),
-      op_load    = (7'b0000011 == opcode),
-      op_store   = (7'b0100011 == opcode),
-      op_miscmem = (7'b0001111 == opcode),
-      op_system  = (7'b1110011 == opcode);
+    assign alu_op    = (is_jmp || is_load || is_store) ? 3'b000 : fn3;
+    assign alu_imm   = |{inst_type_i, inst_type_s};
+
+    assign alu_sub   = op_op && (fn3 == 3'b000) && (fn7 == 7'b0100000);
+    assign alu_sra   = (op_op || op_opimm) &&
+                       (fn3 == 3'b101) && (fn7 == 7'b0100000);
+
+    assign rd_w      = |{inst_type_r, inst_type_i, inst_type_u, inst_type_j};
+    assign ld_upper  = op_lui;
+    assign add_pc    = op_auipc;
+    assign jmp_reg   = op_jalr && (fn3 == 3'b000);
+
+    assign is_branch = inst_type_b;
+    assign is_jmp    = |{op_jal, op_jalr};
+    assign is_load   = op_load;
+    assign is_store  = op_store;
 endmodule
