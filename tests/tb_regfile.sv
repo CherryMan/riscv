@@ -3,7 +3,7 @@
 `include "regfile.v"
 
 module tb_RegFile;
-    parameter XLEN = 32;
+    localparam XLEN = `XLEN;
     reg clk, rd_w;
 
     reg  [4:0]      rs1, rs2, rd;
@@ -24,8 +24,8 @@ module tb_RegFile;
             rs1 <= 0;
             rs2 <= 0;
             #1ns
-            `CHECK_EQUAL(0, rs1_out);
-            `CHECK_EQUAL(0, rs2_out);
+            `CHECK_EQUAL(rs1_out, 0);
+            `CHECK_EQUAL(rs2_out, 0);
         end
 
         `TEST_CASE("writing to x0 does nothing") begin
@@ -35,7 +35,7 @@ module tb_RegFile;
             rd_in <= $urandom;
 
             `CYCLE_CLK;
-            `CHECK_EQUAL(0, rs1_out);
+            `CHECK_EQUAL(rs1_out, 0);
         end
 
         `TEST_CASE("write works for registers x1 to x31") begin

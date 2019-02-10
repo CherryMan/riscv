@@ -1,10 +1,10 @@
-module RegFile(clk, rd_w, rd, rs1, rs2, rd_in, rs1_out, rs2_out);
-    parameter XLEN = 32;
-
-    input             clk, rd_w;
-    input  [4:0]      rs1, rs2, rd;
-    input  [XLEN-1:0] rd_in;
-    output [XLEN-1:0] rs1_out, rs2_out;
+module RegFile
+ #( parameter XLEN = 32
+ )( input clk, rd_w
+  , input [4:0] rd, rs1, rs2
+  , input [XLEN-1:0] rd_in
+  , output [XLEN-1:0] rs1_out, rs2_out
+ );
 
     reg  [XLEN-1:0] reg_file [31:1];
     wire [XLEN-1:0] reg_data [31:0];
