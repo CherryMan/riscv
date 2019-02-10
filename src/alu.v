@@ -13,9 +13,10 @@ module ALU
     assign lt  = $signed(s1) < $signed(s2);
     assign ltu = s1 < s2;
 
-    parameter MAX_SHIFT = $clog2(XLEN);
-    wire [XLEN-1:0] neg_s2 = {{XLEN{sub}}^s2} + { {(XLEN-1){1'b0}}, sub};
+    localparam MAX_SHIFT = $clog2(XLEN);
     wire [MAX_SHIFT-1:0] shamt = s2[MAX_SHIFT-1:0];
+
+    wire [XLEN-1:0] neg_s2 = {{XLEN{sub}}^s2} + { {(XLEN-1){1'b0}}, sub};
 
     always @* begin
         case (op)

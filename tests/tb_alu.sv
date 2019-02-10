@@ -1,10 +1,11 @@
 `include "vunit_defines.svh"
+`include "common.sv"
 `include "alu.v"
 
 
 module tb_ALU;
-    parameter XLEN = 32;
-    parameter MASK = (2^XLEN - 1);
+    localparam XLEN = `XLEN;
+    localparam MASK = (2^XLEN - 1);
 
     reg             sub, sra;
     reg  [2:0]      op;
