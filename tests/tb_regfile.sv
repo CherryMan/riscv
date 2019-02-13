@@ -10,8 +10,7 @@ module tb_RegFile;
     reg  [XLEN-1:0] rd_in;
     wire [XLEN-1:0] rs1_out, rs2_out;
 
-    RegFile #(XLEN) reg_file
-        (clk, rd_w, rd, rs1, rs2, rd_in, rs1_out, rs2_out);
+    RegFile #(XLEN) reg_file (.*);
 
     `CLK_CREATE(clk);
 
@@ -47,8 +46,8 @@ module tb_RegFile;
                 rs2 <= i;
                 rd_in <= $urandom;
                 `CYCLE_CLK;
-                `CHECK_EQUAL(rs1_out, rd_in);
-                `CHECK_EQUAL(rs2_out, rd_in);
+                #1 `CHECK_EQUAL(rs1_out, rd_in);
+                   `CHECK_EQUAL(rs2_out, rd_in);
             end
         end
 
@@ -60,12 +59,12 @@ module tb_RegFile;
                 rd_w  <= 1;
                 rd_in <= 0;
                 `CYCLE_CLK;
-                `CHECK_EQUAL(rs1_out, 0);
+                #1 `CHECK_EQUAL(rs1_out, 0);
 
                 rd_w  <= 0;
                 rd_in <= $urandom;
                 `CYCLE_CLK;
-                `CHECK_EQUAL(rs1_out, 0);
+                #1 `CHECK_EQUAL(rs1_out, 0);
             end
         end
     end

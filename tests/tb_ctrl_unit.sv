@@ -1,4 +1,5 @@
 `include "vunit_defines.svh"
+`include "asm.sv"
 `include "common.sv"
 `include "ctrl_unit.v"
 
@@ -21,12 +22,12 @@
     logic is_store;
 
 `define TEST(n, i) alu_op: 3'bx, default:0, name:n, inst:i
-`define TESTR(n) `TEST(n, callr(n, 0, 0, 0))
-`define TESTI(n) `TEST(n, calli(n, 0, 0, 0))
-`define TESTS(n) `TEST(n, calls(n, 0, 0, 0))
-`define TESTB(n) `TEST(n, callb(n, 0, 0, 0))
-`define TESTU(n) `TEST(n, callu(n, 0, 0))
-`define TESTJ(n) `TEST(n, callj(n, 0, 0))
+`define TESTR(n) `TEST(n, callr(n, "x0", "x0", "x0"))
+`define TESTI(n) `TEST(n, calli(n, "x0", "x0", 0))
+`define TESTS(n) `TEST(n, calls(n, "x0", "x0", 0))
+`define TESTB(n) `TEST(n, callb(n, "x0", "x0", 0))
+`define TESTU(n) `TEST(n, callu(n, "x0", 0))
+`define TESTJ(n) `TEST(n, callj(n, "x0", 0))
 localparam  struct {
   string            name;
   logic [`XLEN-1:0] inst;
