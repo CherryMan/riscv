@@ -7,7 +7,7 @@ module tb_CPU;
     localparam XLEN = `XLEN;
     localparam BYTES = XLEN / 8;
 
-    logic clk, resetn;
+    logic clk, rstn;
     logic [XLEN-1:0] mem_dout, rom_data;
 
     wire mem_r;
@@ -15,7 +15,7 @@ module tb_CPU;
     wire [XLEN-1:0] mem_din;
     wire [XLEN-1:0] rom_addr, mem_addr;
 
-    CPU cpu (.*);
+    CPU #(XLEN) cpu (.*);
 
     `CLK_CREATE(clk);
 
@@ -49,8 +49,8 @@ module tb_CPU;
     end
 
     task run();
-        resetn = 1;
-        #1 resetn = 0;
+        rstn = 1;
+        #1 rstn = 0;
         #1 `CLK_INIT(clk);
 
         // TODO: detect end based on rom_addr

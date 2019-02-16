@@ -1,11 +1,12 @@
 `include "alu.v"
 `include "ctrl_unit.v"
+`include "ifu.v"
 `include "lsu.v"
 `include "regfile.v"
 
 module CPU
  #( parameter XLEN = 32
- )( input clk, resetn
+ )( input clk, rstn
   , input  [XLEN-1:0] rom_data, mem_dout
   , output [XLEN-1:0] rom_addr, mem_din, mem_addr
   , output [XLEN/8-1:0] mem_w
@@ -14,8 +15,6 @@ module CPU
 
     reg [XLEN-1:0] inst;
     reg [XLEN-1:0] pc;
-
-    assign rom_addr = pc;
 
     // -- Decoded instruction
     wire [XLEN-1:0] i_imm, s_imm, u_imm, b_imm, j_imm;
@@ -34,7 +33,7 @@ module CPU
     // -- Subunit wiring
     wire rd_w, ld_upper, add_pc, jmp_reg;
     wire is_branch, is_jmp, is_load, is_store;
-    wire [XLEN-1:0] load_data;
+    wire [XLEN-1:0] pc_next, load_data;
 
     wire [2:0] alu_op;
     wire alu_imm, alu_sub, alu_sra;
@@ -48,13 +47,14 @@ module CPU
     reg [XLEN-1:0] rd_in;
     always @* begin // rd_in
         if      (ld_upper)      rd_in = u_imm;
-        else if (add_pc|is_jmp) rd_in = pc +  (is_jmp ? 4 : u_imm);
+        else if (add_pc|is_jmp) rd_in = pc + (is_jmp ? 4 : u_imm);
         else if (is_load)       rd_in = load_data;
         else    rd_in = alu_out;
     end
 
     assign mem_addr = alu_out; // rs1_out + s_imm
     assign mem_din  = rs2_out;
+    assign rom_addr = pc;
 
     // -- Subunits
     RegFile #(XLEN) regs
@@ -80,12 +80,17 @@ module CPU
        .mem_dout(mem_dout), .mem_w(mem_w), .mem_r(mem_r),
        .load_data(load_data));
 
-    always @(negedge resetn) begin
+    IFU #(XLEN) ifu
+      (.is_branch(is_branch), .is_jmp(is_jmp), .jmp_reg(jmp_reg),
+       .eq(eq), .lt(lt), .ltu(ltu),
+       .fn3(fn3), .alu_out(alu_out), .b_imm(b_imm), .j_imm(j_imm),
+       .pc(pc), .pc_next(pc_next));
+
+    always @(negedge rstn)
         pc <= 'b0;
-    end
 
     always @(posedge clk) begin
-        pc   <= pc + 4; // TODO: jmp and branch instructions
         inst <= rom_data;
+        pc   <= pc_next;
     end
 endmodule
