@@ -14,9 +14,8 @@ module IFU
 
     reg branch_taken;
     reg  [XLEN-1:0] pc_offset;
-    wire [XLEN:0] added_pc = {1'b0, pc} + {pc_offset[XLEN-1], pc_offset};
 
-    assign pc_next = added_pc[XLEN-1:0];
+    assign pc_next = pc + pc_offset;
 
     always @* begin // branch_taken
         case (fn3)

@@ -14,6 +14,9 @@ module tb_IFU;
 
     wire [XLEN-1:0] pc_next;
 
+    // Used for storing a random PC offset.
+    integer n;
+
     IFU ifu (.*);
 
     `TEST_SUITE begin
@@ -22,6 +25,7 @@ module tb_IFU;
             is_jmp    = 0;
             jmp_reg   = 0;
 
+            n  = $random();
             pc = $urandom();
             #1;
         end
@@ -32,25 +36,34 @@ module tb_IFU;
 
         `TEST_CASE("jal") begin
             is_jmp = 1;
-            j_imm  = $urandom();
-            #1 `CHECK_EQUAL(pc_next, pc + j_imm);
+
+            j_imm = n;
+            #1 `CHECK_EQUAL(pc_next, pc + n);
+
+            j_imm = -n;
+            #1 `CHECK_EQUAL(pc_next, pc - n);
         end
 
         `TEST_CASE("jalr") begin
             is_jmp  = 1;
             jmp_reg = 1;
-            alu_out = 1;
-            #1 `CHECK_EQUAL(pc_next, pc + alu_out);
+
+            alu_out = n;
+            #1 `CHECK_EQUAL(pc_next, pc + n);
+
+            alu_out = -n;
+            #1 `CHECK_EQUAL(pc_next, pc - n);
         end
 
         `TEST_CASE("branch") begin
             is_branch = 1;
-            b_imm     = $urandom();
 
-            `define test(fn, v, p) \
-                fn3 = fn; \
-                ``v = p;  #1 `CHECK_EQUAL(pc_next, pc + b_imm); \
-                ``v = ~p; #1 `CHECK_EQUAL(pc_next, pc + 4);
+            `define test(fn, v, p)                            \
+                fn3 = fn;                                     \
+                ``v = ~p; #1 `CHECK_EQUAL(pc_next, pc + 4);   \
+                ``v = p;                                      \
+                b_imm = n;  #1 `CHECK_EQUAL(pc_next, pc + n); \
+                b_imm = -n; #1 `CHECK_EQUAL(pc_next, pc - n);
 
               /* BEQ  */ `test(3'b000, eq,  1);
               /* BNE  */ `test(3'b001, eq,  0);
