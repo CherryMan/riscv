@@ -9,8 +9,7 @@ module CPU
  )( input clk, rstn
   , input  [XLEN-1:0] rom_data, mem_dout
   , output [XLEN-1:0] rom_addr, mem_din, mem_addr
-  , output [XLEN/8-1:0] mem_w
-  , output mem_r
+  , output [XLEN/8-1:0] mem_r, mem_w
  );
 
     reg [XLEN-1:0] inst;

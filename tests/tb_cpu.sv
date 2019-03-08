@@ -10,8 +10,7 @@ module tb_CPU;
     logic clk, rstn;
     logic [XLEN-1:0] mem_dout, rom_data;
 
-    wire mem_r;
-    wire [XLEN/8-1:0] mem_w;
+    wire [XLEN/8-1:0] mem_r, mem_w;
     wire [XLEN-1:0] mem_din;
     wire [XLEN-1:0] rom_addr, mem_addr;
 
@@ -27,17 +26,15 @@ module tb_CPU;
 
     // Memory read logic
     always @* begin
-        if (mem_r)
-            for (int i = 0; i < BYTES; ++i)
+        foreach (mem_r[i])
+            if (mem_r[i])
                 mem_dout[i*8 +: 8] = mem.exists(mem_addr+i) ?
                     mem[mem_addr + i] : 'bx;
-        else
-            mem_dout = 'bx;
     end
 
     // Memory write logic
     always @(negedge clk) begin
-        for (int i = 0; i < BYTES; ++i)
+        foreach (mem_w[i])
             if (mem_w[i])
                 mem[mem_addr + i] = mem_din[i*8 +: 8];
     end
