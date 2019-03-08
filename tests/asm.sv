@@ -150,7 +150,7 @@ function logic [31:0] callr(string i, string rd, rs1, rs2);
             _funct3(i), reg_bits(rd), _opcode(i)};
 endfunction
 
-function logic [31:0] calli (string i, string rd, rs1, input [11:0] imm);
+function logic [31:0] calli(string i, string rd, rs1, input [11:0] imm);
     case (i)
     "slli","srli","srai":
         return {_funct7(i), imm[$clog2(`XLEN)-1:0],
@@ -165,7 +165,7 @@ function logic [31:0] calls(string i, string rs2, rs1, logic [11:0] imm);
             _funct3(i), imm[4:0], _opcode(i)};
 endfunction
 
-function logic [31:0] callb(string i, string rs1, rs2, input [12:1] imm);
+function logic [31:0] callb(string i, string rs1, rs2, input [12:0] imm);
     return {imm[12], imm[10:5], reg_bits(rs2), reg_bits(rs1),
             _funct3(i), imm[4:1], imm[11], _opcode(i)};
 endfunction
@@ -174,7 +174,7 @@ function logic [31:0] callu(string i, string rd, logic [31:12] imm);
     return {imm, reg_bits(rd), _opcode(i)};
 endfunction
 
-function logic [31:0] callj(string i, string rd, input [20:1] imm);
+function logic [31:0] callj(string i, string rd, input [20:0] imm);
     return {imm[20], imm[10:1], imm[11], imm[19:12], reg_bits(rd), _opcode(i)};
 endfunction
 

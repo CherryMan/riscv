@@ -46,15 +46,16 @@ module CPU
 
     reg [XLEN-1:0] rd_in;
     always @* begin // rd_in
-        if      (ld_upper)      rd_in = u_imm;
-        else if (add_pc|is_jmp) rd_in = pc + (is_jmp ? 4 : u_imm);
-        else if (is_load)       rd_in = load_data;
-        else    rd_in = alu_out;
+        if      (ld_upper) rd_in = u_imm;
+        else if (add_pc)   rd_in = pc + u_imm;
+        else if (is_jmp)   rd_in = pc + 4;
+        else if (is_load)  rd_in = load_data;
+        else               rd_in = alu_out;
     end
 
     assign mem_addr = alu_out; // rs1_out + s_imm
     assign mem_din  = rs2_out;
-    assign rom_addr = pc;
+    assign rom_addr = pc_next;
 
     // -- Subunits
     RegFile #(XLEN) regs
@@ -84,10 +85,7 @@ module CPU
       (.is_branch(is_branch), .is_jmp(is_jmp), .jmp_reg(jmp_reg),
        .eq(eq), .lt(lt), .ltu(ltu),
        .fn3(fn3), .alu_out(alu_out), .b_imm(b_imm), .j_imm(j_imm),
-       .pc(pc), .pc_next(pc_next));
-
-    always @(negedge rstn)
-        pc <= 'b0;
+       .pc(pc), .pc_next(pc_next), .rstn(rstn));
 
     always @(posedge clk) begin
         inst <= rom_data;

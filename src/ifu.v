@@ -1,11 +1,12 @@
 module IFU
  #( parameter XLEN = 32
- )( input  [XLEN-1:0] pc
-  , input  is_branch, is_jmp, jmp_reg
-  , input  eq, lt, ltu
-  , input  [2:0] fn3
-  , input  [XLEN-1:0] alu_out, b_imm, j_imm
-  , output [XLEN-1:0] pc_next
+ )( input      rstn
+  , input      [XLEN-1:0] pc
+  , input      is_branch, is_jmp, jmp_reg
+  , input      eq, lt, ltu
+  , input      [2:0] fn3
+  , input      [XLEN-1:0] alu_out, b_imm, j_imm
+  , output reg [XLEN-1:0] pc_next
  );
 
     wire ne  = ~eq;
@@ -13,9 +14,9 @@ module IFU
     wire geu = ~ltu;
 
     reg branch_taken;
-    reg  [XLEN-1:0] pc_offset;
 
-    assign pc_next = pc + pc_offset;
+    always @(negedge rstn)
+        pc_next <= 'b0;
 
     always @* begin // branch_taken
         case (fn3)
@@ -30,10 +31,10 @@ module IFU
 
     always @* begin // pc_offset
         if (is_jmp)
-            pc_offset = jmp_reg ? alu_out : j_imm;
+            pc_next = jmp_reg ? alu_out : pc + j_imm;
         else if (is_branch & branch_taken)
-            pc_offset = b_imm;
+            pc_next = pc + b_imm;
         else
-            pc_offset = 4;
+            pc_next = pc + 4;
     end
 endmodule

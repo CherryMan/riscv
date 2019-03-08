@@ -5,6 +5,7 @@
 module tb_IFU;
     localparam XLEN = `XLEN;
 
+    logic rstn;
     logic is_branch, is_jmp, jmp_reg;
     logic eq, lt, ltu;
     logic [2:0] fn3;
@@ -30,6 +31,12 @@ module tb_IFU;
             #1;
         end
 
+        `TEST_CASE("rstn pin") begin
+            rstn = 1;
+            #1 rstn = 0;
+            #1 `CHECK_EQUAL(pc_next, 0);
+        end
+
         `TEST_CASE("no jump or branch") begin
             `CHECK_EQUAL(pc_next, pc + 4);
         end
@@ -49,10 +56,7 @@ module tb_IFU;
             jmp_reg = 1;
 
             alu_out = n;
-            #1 `CHECK_EQUAL(pc_next, pc + n);
-
-            alu_out = -n;
-            #1 `CHECK_EQUAL(pc_next, pc - n);
+            #1 `CHECK_EQUAL(pc_next, n);
         end
 
         `TEST_CASE("branch") begin
