@@ -80,22 +80,31 @@ module tb_CPU;
 
     `TEST_SUITE begin
         `TEST_CASE("basic load and store") begin
+            n = -1000;
             rom = '{
-                I("addi x1, x0, 123"),
-                I("sb x1, 0(x0)"),
-                I("lb x2, 0(x0)"),
-                I("addi x2, x2, 100"),
-                I("sb x2, 1(x0)"),
+                I("addi x1, x0, -1000"),
+                I("sw x1, 0(x0)"),
 
-                I("addi x4, x0, 321"),
-                I("addi x5, x0, 8"),
-                I("sw   x4, 4(x5)")
+                I("lb  x2, 0(x0)"),
+                I("sb  x2, 4(x0)"),
+                I("lbu x3, 0(x0)"),
+                I("sb  x3, 8(x0)"),
+
+                I("lh  x2,  0(x0)"),
+                I("sh  x2, 12(x0)"),
+                I("lhu x3,  0(x0)"),
+                I("sh  x3, 16(x0)"),
+
+                I("lw  x2,  0(x0)"),
+                I("sw  x2, 20(x0)")
             };
             run();
 
-            `assert_mem_b(0,  123);
-            `assert_mem_b(1,  223);
-            `assert_mem_w(12, 321);
+            `assert_mem_b( 4, n);
+            `assert_mem_b( 8, n);
+            `assert_mem_h(12, n);
+            `assert_mem_h(16, n);
+            `assert_mem_w(20, n);
         end
 
         `TEST_CASE("arithmetic operations") begin
