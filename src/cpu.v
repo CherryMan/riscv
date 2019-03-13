@@ -6,7 +6,7 @@
 
 module CPU
  #( parameter XLEN = 32
- )( input clk, rstn
+ )( input clk, rstl
   , input  [XLEN-1:0] rom_data, mem_dout
   , output [XLEN-1:0] rom_addr, mem_din, mem_addr
   , output [XLEN/8-1:0] mem_r, mem_w
@@ -84,7 +84,7 @@ module CPU
       (.is_branch(is_branch), .is_jmp(is_jmp), .jmp_reg(jmp_reg),
        .eq(eq), .lt(lt), .ltu(ltu),
        .fn3(fn3), .alu_out(alu_out), .b_imm(b_imm), .j_imm(j_imm),
-       .pc(pc), .pc_next(pc_next), .rstn(rstn));
+       .pc(pc), .pc_next(pc_next), .rstl(rstl));
 
     always @(posedge clk) begin
         inst <= rom_data;

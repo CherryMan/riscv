@@ -5,7 +5,7 @@
 module tb_IFU;
     localparam XLEN = `XLEN;
 
-    logic rstn;
+    logic rstl;
     logic is_branch, is_jmp, jmp_reg;
     logic eq, lt, ltu;
     logic [2:0] fn3;
@@ -31,9 +31,9 @@ module tb_IFU;
             #1;
         end
 
-        `TEST_CASE("rstn pin") begin
-            rstn = 1;
-            #1 rstn = 0;
+        `TEST_CASE("rstl pin") begin
+            rstl = 1;
+            #1 rstl = 0;
             #1 `CHECK_EQUAL(pc_next, 0);
         end
 

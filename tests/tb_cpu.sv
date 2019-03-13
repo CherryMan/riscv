@@ -7,7 +7,7 @@ module tb_CPU;
     localparam XLEN = `XLEN;
     localparam BYTES = XLEN / 8;
 
-    logic clk, rstn;
+    logic clk, rstl;
     logic [XLEN-1:0] mem_dout, rom_data;
 
     wire [XLEN/8-1:0] mem_r, mem_w;
@@ -56,8 +56,8 @@ module tb_CPU;
     endtask
 
     task run();
-        rstn = 1;
-        #1 rstn = 0;
+        rstl = 1;
+        #1 rstl = 0;
         #1 `CLK_INIT(clk);
 
         // TODO: Detect end based on syscall? There must be a better way

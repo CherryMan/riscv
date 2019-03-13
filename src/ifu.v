@@ -1,6 +1,6 @@
 module IFU
  #( parameter XLEN = 32
- )( input      rstn
+ )( input      rstl
   , input      [XLEN-1:0] pc
   , input      is_branch, is_jmp, jmp_reg
   , input      eq, lt, ltu
@@ -15,8 +15,8 @@ module IFU
 
     reg branch_taken;
 
-    always @(negedge rstn)
-        pc_next <= 'b0;
+    always @(rstl)
+        if (!rstl) pc_next = 'b0;
 
     always @* begin // branch_taken
         case (fn3)
@@ -26,6 +26,7 @@ module IFU
             3'b101: /* BGE  */ branch_taken = ge;
             3'b110: /* BLTU */ branch_taken = ltu;
             3'b111: /* BGEU */ branch_taken = geu;
+            default:           branch_taken = 0;
         endcase
     end
 
