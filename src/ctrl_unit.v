@@ -7,6 +7,7 @@ module CtrlUnit
   , output                rd_w
   , output                ld_upper, add_pc, jmp_reg
   , output                is_branch, is_jmp, is_load, is_store
+  , output                is_fence, is_fencei
  );
 
     wire [6:0] opcode = inst[6:0];
@@ -33,6 +34,7 @@ module CtrlUnit
         op_jalr,
         op_load,
         op_opimm
+        // FENCE instructions not included
       },
       inst_type_u = |{
         op_lui,
@@ -58,4 +60,7 @@ module CtrlUnit
     assign is_jmp    = |{op_jal, op_jalr};
     assign is_load   = op_load;
     assign is_store  = op_store;
+
+    assign is_fence  = op_miscmem && (fn3 == 3'b000); // TODO: currently noop
+    assign is_fencei = op_miscmem && (fn3 == 3'b001); // TODO: currently noop
 endmodule

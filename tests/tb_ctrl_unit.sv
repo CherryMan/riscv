@@ -19,7 +19,9 @@
     logic is_branch;    \
     logic is_jmp;       \
     logic is_load;      \
-    logic is_store;
+    logic is_store;     \
+    logic is_fence;     \
+    logic is_fencei;
 
 `define TEST(n, i) alu_op: 3'bx, default:0, name:n, inst:i
 `define TESTR(n) `TEST(n, callr(n, "x0", "x0", "x0"))
@@ -78,6 +80,9 @@ localparam  struct {
 ,'{`TESTR("sra"),  rd_w:1, alu_op: 3'b101, alu_sra:1}
 ,'{`TESTR("or"),   rd_w:1, alu_op: 3'b110}
 ,'{`TESTR("and"),  rd_w:1, alu_op: 3'b111}
+
+,'{`TESTI("fence"),  is_fence:1}  // TODO: still noop
+,'{`TESTI("fencei"), is_fencei:1} // TODO: still noop
 };
 `undef TEST
 `undef TESTR

@@ -13,6 +13,10 @@ typedef enum {
     // to the offset.
     L_TYPE,
 
+    // Special types for fence instructions
+    FENCE,
+    FENCEI,
+
     R_TYPE,
     I_TYPE,
     S_TYPE,
@@ -22,7 +26,7 @@ typedef enum {
 } InstType;
 
 typedef enum {
-    NONE, RD, RS1, RS2, IMM, OFFS
+    NONE, RD, RS1, RS2, IMM, OFFS, PRED, SUCC
 } InstTok;
 
 typedef InstTok InstTokList [0:3];
@@ -40,43 +44,45 @@ typedef struct {
  */
 function InstDefn inst_table(input string i);
   case (i)
-  "lui"   : return '{U_TYPE, 7'b0110111, 3'b  x, 7'b      x};
-  "auipc" : return '{U_TYPE, 7'b0010111, 3'b  x, 7'b      x};
-  "jal"   : return '{J_TYPE, 7'b1101111, 3'b  x, 7'b      x};
-  "jalr"  : return '{I_TYPE, 7'b1100111, 3'b000, 7'b      x};
-  "beq"   : return '{B_TYPE, 7'b1100011, 3'b000, 7'b      x};
-  "bne"   : return '{B_TYPE, 7'b1100011, 3'b001, 7'b      x};
-  "blt"   : return '{B_TYPE, 7'b1100011, 3'b100, 7'b      x};
-  "bge"   : return '{B_TYPE, 7'b1100011, 3'b101, 7'b      x};
-  "bltu"  : return '{B_TYPE, 7'b1100011, 3'b110, 7'b      x};
-  "bgeu"  : return '{B_TYPE, 7'b1100011, 3'b111, 7'b      x};
-  "lb"    : return '{L_TYPE, 7'b0000011, 3'b000, 7'b      x};
-  "lh"    : return '{L_TYPE, 7'b0000011, 3'b001, 7'b      x};
-  "lw"    : return '{L_TYPE, 7'b0000011, 3'b010, 7'b      x};
-  "lbu"   : return '{L_TYPE, 7'b0000011, 3'b100, 7'b      x};
-  "lhu"   : return '{L_TYPE, 7'b0000011, 3'b101, 7'b      x};
-  "sb"    : return '{S_TYPE, 7'b0100011, 3'b000, 7'b      x};
-  "sh"    : return '{S_TYPE, 7'b0100011, 3'b001, 7'b      x};
-  "sw"    : return '{S_TYPE, 7'b0100011, 3'b010, 7'b      x};
-  "addi"  : return '{I_TYPE, 7'b0010011, 3'b000, 7'b      x};
-  "slti"  : return '{I_TYPE, 7'b0010011, 3'b010, 7'b      x};
-  "sltiu" : return '{I_TYPE, 7'b0010011, 3'b011, 7'b      x};
-  "xori"  : return '{I_TYPE, 7'b0010011, 3'b100, 7'b      x};
-  "ori"   : return '{I_TYPE, 7'b0010011, 3'b110, 7'b      x};
-  "andi"  : return '{I_TYPE, 7'b0010011, 3'b111, 7'b      x};
-  "slli"  : return '{I_TYPE, 7'b0010011, 3'b001, 7'b0000000};
-  "srli"  : return '{I_TYPE, 7'b0010011, 3'b101, 7'b0000000};
-  "srai"  : return '{I_TYPE, 7'b0010011, 3'b101, 7'b0100000};
-  "add"   : return '{R_TYPE, 7'b0110011, 3'b000, 7'b0000000};
-  "sub"   : return '{R_TYPE, 7'b0110011, 3'b000, 7'b0100000};
-  "sll"   : return '{R_TYPE, 7'b0110011, 3'b001, 7'b0000000};
-  "slt"   : return '{R_TYPE, 7'b0110011, 3'b010, 7'b0000000};
-  "sltu"  : return '{R_TYPE, 7'b0110011, 3'b011, 7'b0000000};
-  "xor"   : return '{R_TYPE, 7'b0110011, 3'b100, 7'b0000000};
-  "srl"   : return '{R_TYPE, 7'b0110011, 3'b101, 7'b0000000};
-  "sra"   : return '{R_TYPE, 7'b0110011, 3'b101, 7'b0100000};
-  "or"    : return '{R_TYPE, 7'b0110011, 3'b110, 7'b0000000};
-  "and"   : return '{R_TYPE, 7'b0110011, 3'b111, 7'b0000000};
+  "lui"    : return '{U_TYPE, 7'b0110111, 3'b  x, 7'b      x};
+  "auipc"  : return '{U_TYPE, 7'b0010111, 3'b  x, 7'b      x};
+  "jal"    : return '{J_TYPE, 7'b1101111, 3'b  x, 7'b      x};
+  "jalr"   : return '{I_TYPE, 7'b1100111, 3'b000, 7'b      x};
+  "beq"    : return '{B_TYPE, 7'b1100011, 3'b000, 7'b      x};
+  "bne"    : return '{B_TYPE, 7'b1100011, 3'b001, 7'b      x};
+  "blt"    : return '{B_TYPE, 7'b1100011, 3'b100, 7'b      x};
+  "bge"    : return '{B_TYPE, 7'b1100011, 3'b101, 7'b      x};
+  "bltu"   : return '{B_TYPE, 7'b1100011, 3'b110, 7'b      x};
+  "bgeu"   : return '{B_TYPE, 7'b1100011, 3'b111, 7'b      x};
+  "lb"     : return '{L_TYPE, 7'b0000011, 3'b000, 7'b      x};
+  "lh"     : return '{L_TYPE, 7'b0000011, 3'b001, 7'b      x};
+  "lw"     : return '{L_TYPE, 7'b0000011, 3'b010, 7'b      x};
+  "lbu"    : return '{L_TYPE, 7'b0000011, 3'b100, 7'b      x};
+  "lhu"    : return '{L_TYPE, 7'b0000011, 3'b101, 7'b      x};
+  "sb"     : return '{S_TYPE, 7'b0100011, 3'b000, 7'b      x};
+  "sh"     : return '{S_TYPE, 7'b0100011, 3'b001, 7'b      x};
+  "sw"     : return '{S_TYPE, 7'b0100011, 3'b010, 7'b      x};
+  "addi"   : return '{I_TYPE, 7'b0010011, 3'b000, 7'b      x};
+  "slti"   : return '{I_TYPE, 7'b0010011, 3'b010, 7'b      x};
+  "sltiu"  : return '{I_TYPE, 7'b0010011, 3'b011, 7'b      x};
+  "xori"   : return '{I_TYPE, 7'b0010011, 3'b100, 7'b      x};
+  "ori"    : return '{I_TYPE, 7'b0010011, 3'b110, 7'b      x};
+  "andi"   : return '{I_TYPE, 7'b0010011, 3'b111, 7'b      x};
+  "slli"   : return '{I_TYPE, 7'b0010011, 3'b001, 7'b0000000};
+  "srli"   : return '{I_TYPE, 7'b0010011, 3'b101, 7'b0000000};
+  "srai"   : return '{I_TYPE, 7'b0010011, 3'b101, 7'b0100000};
+  "add"    : return '{R_TYPE, 7'b0110011, 3'b000, 7'b0000000};
+  "sub"    : return '{R_TYPE, 7'b0110011, 3'b000, 7'b0100000};
+  "sll"    : return '{R_TYPE, 7'b0110011, 3'b001, 7'b0000000};
+  "slt"    : return '{R_TYPE, 7'b0110011, 3'b010, 7'b0000000};
+  "sltu"   : return '{R_TYPE, 7'b0110011, 3'b011, 7'b0000000};
+  "xor"    : return '{R_TYPE, 7'b0110011, 3'b100, 7'b0000000};
+  "srl"    : return '{R_TYPE, 7'b0110011, 3'b101, 7'b0000000};
+  "sra"    : return '{R_TYPE, 7'b0110011, 3'b101, 7'b0100000};
+  "or"     : return '{R_TYPE, 7'b0110011, 3'b110, 7'b0000000};
+  "and"    : return '{R_TYPE, 7'b0110011, 3'b111, 7'b0000000};
+  "fence"  : return '{FENCE,  7'b0001111, 3'b000, 7'b      x};
+  "fencei" : return '{FENCEI, 7'b0001111, 3'b001, 7'b      x};
   endcase
 endfunction
 
@@ -120,13 +126,15 @@ endfunction
 
 function InstTokList inst_fmt(InstType t);
   case (t)
-  L_TYPE: return '{RD,  OFFS, RS1, NONE};
-  R_TYPE: return '{RD,  RS1,  RS2, NONE};
-  I_TYPE: return '{RD,  RS1,  IMM, NONE};
-  S_TYPE: return '{RS2, OFFS, RS1, NONE};
-  B_TYPE: return '{RS1, RS2,  IMM, NONE};
-  U_TYPE: return '{RD,  IMM, NONE, NONE};
-  J_TYPE: return '{RD,  IMM, NONE, NONE};
+  L_TYPE: return '{RD,   OFFS, RS1,  NONE};
+  R_TYPE: return '{RD,   RS1,  RS2,  NONE};
+  I_TYPE: return '{RD,   RS1,  IMM,  NONE};
+  S_TYPE: return '{RS2,  OFFS, RS1,  NONE};
+  B_TYPE: return '{RS1,  RS2,  IMM,  NONE};
+  U_TYPE: return '{RD,   IMM,  NONE, NONE};
+  J_TYPE: return '{RD,   IMM,  NONE, NONE};
+  FENCE:  return '{PRED, SUCC, NONE, NONE};
+  FENCEI: return '{NONE, NONE, NONE, NONE};
   endcase
 endfunction
 
@@ -189,7 +197,7 @@ function logic [31:0] I(string s);
     InstTokList tl;
     string tok;
     string op, rd, rs1, rs2;
-    integer imm;
+    integer imm, pred, succ;
     int i, j, t;
 
     i = 0;
@@ -210,10 +218,13 @@ function logic [31:0] I(string s);
 
                 tok = s.substr(i, j - 1);
                 case (tl[t])
-                    RD:  rd  = tok;
-                    RS1: rs1 = tok;
-                    RS2: rs2 = tok;
-                    IMM,OFFS: imm = tok.atoi();
+                    RD:   rd   = tok;
+                    RS1:  rs1  = tok;
+                    RS2:  rs2  = tok;
+                    IMM:  imm  = tok.atoi();
+                    OFFS: imm  = tok.atoi();
+                    PRED: pred = tok.atoi();
+                    SUCC: succ = tok.atoi();
                 endcase
 
                 if (tl[t] == OFFS)
@@ -236,5 +247,7 @@ function logic [31:0] I(string s);
         B_TYPE: return callb(op, rs1, rs2, imm);
         U_TYPE: return callu(op, rd, imm);
         J_TYPE: return callj(op, rd, imm);
+        FENCE:  return calli(op, "x0", "x0", {4'b0, pred[3:0], succ[3:0]});
+        FENCEI: return calli(op, "x0", "x0", 0);
     endcase
 endfunction
