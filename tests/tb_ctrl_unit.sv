@@ -29,80 +29,80 @@
     logic csr_clr;
 
 `define TEST(n, i) alu_op: 3'bx, default:0, name:n, inst:i
-`define TESTR(n) `TEST(n, callr(n, "x0", "x0", "x0"))
-`define TESTI(n) `TEST(n, calli(n, "x0", "x0", 0))
-`define TESTS(n) `TEST(n, calls(n, "x0", "x0", 0))
-`define TESTB(n) `TEST(n, callb(n, "x0", "x0", 0))
-`define TESTU(n) `TEST(n, callu(n, "x0", 0))
-`define TESTJ(n) `TEST(n, callj(n, "x0", 0))
-localparam  struct {
+`define T_REG(n) `TEST(n, I({n, " x0, x0, x0"}))
+`define T_IMM(n) `TEST(n, I({n, " x0, x0, 0"}))
+`define T_MEM(n) `TEST(n, I({n, " x0, 0(x0)"}))
+`define T_U(n) `TEST(n, I({n, " x0, 0"}))
+`define T_CSR(n) `TEST(n, I({n, " x0, x0, mscratch"}))
+`define T_CSRI(n) `TEST(n, I({n, " x0, 0, mscratch"}))
+const struct {
   string            name;
-  logic [`XLEN-1:0] inst;
+  logic [31:0] inst;
 
   `DECL_CU_OUT
 
 } tests [] = '{
 // 'x acts as a don't care.
- '{`TESTU("lui"),   rd_w:1, ld_upper:1}
-,'{`TESTU("auipc"), rd_w:1, add_pc:1}
-,'{`TESTJ("jal"),   rd_w:1, is_jmp:1}
-,'{`TESTI("jalr"),  rd_w:1, is_jmp:1, jmp_reg:1, alu_imm:1, alu_op: 3'b000}
+ '{`T_U("lui"),   rd_w:1, ld_upper:1}
+,'{`T_U("auipc"), rd_w:1, add_pc:1}
+,'{`T_U("jal"),   rd_w:1, is_jmp:1}
+,'{`T_IMM("jalr"),  rd_w:1, is_jmp:1, jmp_reg:1, alu_imm:1, alu_op: 3'b000}
 
-,'{`TESTB("beq"),  is_branch:1}
-,'{`TESTB("bne"),  is_branch:1}
-,'{`TESTB("blt"),  is_branch:1}
-,'{`TESTB("bge"),  is_branch:1}
-,'{`TESTB("bltu"), is_branch:1}
-,'{`TESTB("bgeu"), is_branch:1}
+,'{`T_IMM("beq"),  is_branch:1}
+,'{`T_IMM("bne"),  is_branch:1}
+,'{`T_IMM("blt"),  is_branch:1}
+,'{`T_IMM("bge"),  is_branch:1}
+,'{`T_IMM("bltu"), is_branch:1}
+,'{`T_IMM("bgeu"), is_branch:1}
 
-,'{`TESTI("lb"),  rd_w:1, alu_imm:1, alu_op: 3'b000, is_load:1}
-,'{`TESTI("lh"),  rd_w:1, alu_imm:1, alu_op: 3'b000, is_load:1}
-,'{`TESTI("lw"),  rd_w:1, alu_imm:1, alu_op: 3'b000, is_load:1}
-,'{`TESTI("lhu"), rd_w:1, alu_imm:1, alu_op: 3'b000, is_load:1}
-,'{`TESTI("lbb"), rd_w:1, alu_imm:1, alu_op: 3'b000, is_load:1}
+,'{`T_MEM("lb"),  rd_w:1, alu_imm:1, alu_op: 3'b000, is_load:1}
+,'{`T_MEM("lh"),  rd_w:1, alu_imm:1, alu_op: 3'b000, is_load:1}
+,'{`T_MEM("lw"),  rd_w:1, alu_imm:1, alu_op: 3'b000, is_load:1}
+,'{`T_MEM("lhu"), rd_w:1, alu_imm:1, alu_op: 3'b000, is_load:1}
+,'{`T_MEM("lbb"), rd_w:1, alu_imm:1, alu_op: 3'b000, is_load:1}
 
-,'{`TESTS("sb"), alu_imm:1, alu_op: 3'b000, is_store:1}
-,'{`TESTS("sh"), alu_imm:1, alu_op: 3'b000, is_store:1}
-,'{`TESTS("sw"), alu_imm:1, alu_op: 3'b000, is_store:1}
+,'{`T_MEM("sb"), alu_imm:1, alu_op: 3'b000, is_store:1}
+,'{`T_MEM("sh"), alu_imm:1, alu_op: 3'b000, is_store:1}
+,'{`T_MEM("sw"), alu_imm:1, alu_op: 3'b000, is_store:1}
 
-,'{`TESTI("addi"),  rd_w:1, alu_imm:1, alu_op: 3'b000}
-,'{`TESTI("slti"),  rd_w:1, alu_imm:1, alu_op: 3'b010}
-,'{`TESTI("sltiu"), rd_w:1, alu_imm:1, alu_op: 3'b011}
-,'{`TESTI("xori"),  rd_w:1, alu_imm:1, alu_op: 3'b100}
-,'{`TESTI("ori"),   rd_w:1, alu_imm:1, alu_op: 3'b110}
-,'{`TESTI("andi"),  rd_w:1, alu_imm:1, alu_op: 3'b111}
-,'{`TESTI("slli"),  rd_w:1, alu_imm:1, alu_op: 3'b001}
-,'{`TESTI("srli"),  rd_w:1, alu_imm:1, alu_op: 3'b101}
-,'{`TESTI("srai"),  rd_w:1, alu_imm:1, alu_op: 3'b101, alu_sra:1}
+,'{`T_IMM("addi"),  rd_w:1, alu_imm:1, alu_op: 3'b000}
+,'{`T_IMM("slti"),  rd_w:1, alu_imm:1, alu_op: 3'b010}
+,'{`T_IMM("sltiu"), rd_w:1, alu_imm:1, alu_op: 3'b011}
+,'{`T_IMM("xori"),  rd_w:1, alu_imm:1, alu_op: 3'b100}
+,'{`T_IMM("ori"),   rd_w:1, alu_imm:1, alu_op: 3'b110}
+,'{`T_IMM("andi"),  rd_w:1, alu_imm:1, alu_op: 3'b111}
+,'{`T_IMM("slli"),  rd_w:1, alu_imm:1, alu_op: 3'b001}
+,'{`T_IMM("srli"),  rd_w:1, alu_imm:1, alu_op: 3'b101}
+,'{`T_IMM("srai"),  rd_w:1, alu_imm:1, alu_op: 3'b101, alu_sra:1}
 
-,'{`TESTR("add"),  rd_w:1, alu_op: 3'b000}
-,'{`TESTR("sub"),  rd_w:1, alu_op: 3'b000, alu_sub:1}
-,'{`TESTR("sll"),  rd_w:1, alu_op: 3'b001}
-,'{`TESTR("slt"),  rd_w:1, alu_op: 3'b010}
-,'{`TESTR("sltu"), rd_w:1, alu_op: 3'b011}
-,'{`TESTR("xor"),  rd_w:1, alu_op: 3'b100}
-,'{`TESTR("srl"),  rd_w:1, alu_op: 3'b101}
-,'{`TESTR("sra"),  rd_w:1, alu_op: 3'b101, alu_sra:1}
-,'{`TESTR("or"),   rd_w:1, alu_op: 3'b110}
-,'{`TESTR("and"),  rd_w:1, alu_op: 3'b111}
+,'{`T_REG("add"),  rd_w:1, alu_op: 3'b000}
+,'{`T_REG("sub"),  rd_w:1, alu_op: 3'b000, alu_sub:1}
+,'{`T_REG("sll"),  rd_w:1, alu_op: 3'b001}
+,'{`T_REG("slt"),  rd_w:1, alu_op: 3'b010}
+,'{`T_REG("sltu"), rd_w:1, alu_op: 3'b011}
+,'{`T_REG("xor"),  rd_w:1, alu_op: 3'b100}
+,'{`T_REG("srl"),  rd_w:1, alu_op: 3'b101}
+,'{`T_REG("sra"),  rd_w:1, alu_op: 3'b101, alu_sra:1}
+,'{`T_REG("or"),   rd_w:1, alu_op: 3'b110}
+,'{`T_REG("and"),  rd_w:1, alu_op: 3'b111}
 
-,'{`TESTI("fence"),  is_fence:1}  // TODO: still noop
-,'{`TESTI("fencei"), is_fencei:1} // TODO: still noop
+,'{`T_IMM("fence"),  is_fence:1}  // TODO: still noop
+,'{`T_IMM("fencei"), is_fencei:1} // TODO: still noop
 
-,'{`TESTI("csrrw"),  rd_w:1, is_csr:1, csr_w:1}
-,'{`TESTI("csrrs"),  rd_w:1, is_csr:1, csr_set:1}
-,'{`TESTI("csrrc"),  rd_w:1, is_csr:1, csr_clr:1}
-,'{`TESTI("csrrwi"), rd_w:1, is_csr:1, csr_w:1,   csr_zimm:1}
-,'{`TESTI("csrrsi"), rd_w:1, is_csr:1, csr_set:1, csr_zimm:1}
-,'{`TESTI("csrrci"), rd_w:1, is_csr:1, csr_clr:1, csr_zimm:1}
+,'{`T_CSR("csrrw"),   rd_w:1, is_csr:1, csr_w:1}
+,'{`T_CSR("csrrs"),   rd_w:1, is_csr:1, csr_set:1}
+,'{`T_CSR("csrrc"),   rd_w:1, is_csr:1, csr_clr:1}
+,'{`T_CSRI("csrrwi"), rd_w:1, is_csr:1, csr_w:1,   csr_zimm:1}
+,'{`T_CSRI("csrrsi"), rd_w:1, is_csr:1, csr_set:1, csr_zimm:1}
+,'{`T_CSRI("csrrci"), rd_w:1, is_csr:1, csr_clr:1, csr_zimm:1}
 };
 `undef TEST
-`undef TESTR
-`undef TESTI
-`undef TESTS
-`undef TESTB
-`undef TESTU
-`undef TESTJ
+`undef T_REG
+`undef T_IMM
+`undef T_MEM
+`undef T_U
+`undef T_CSR
+`undef T_CSRI
 
 module tb_CtrlUnit;
     localparam XLEN = `XLEN;

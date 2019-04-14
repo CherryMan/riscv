@@ -19,6 +19,8 @@ typedef enum {
     CSR_T,
     CSRI_T,
 
+    SHIFTI,
+
     R_TYPE,
     I_TYPE,
     S_TYPE,
@@ -36,8 +38,8 @@ typedef InstTok InstTokList [0:3];
 typedef struct {
     InstType inst_type;
     logic [6:0] opcode;
-    logic [2:0] funct3;
-    logic [6:0] funct7;
+    logic [2:0] fn3;
+    logic [6:0] fn7;
 } InstDefn;
 
 /* A case statement is used instead of an associative
@@ -70,9 +72,9 @@ function InstDefn inst_table(input string i);
   "xori"   : return '{I_TYPE, 7'b0010011, 3'b100, 7'b      x};
   "ori"    : return '{I_TYPE, 7'b0010011, 3'b110, 7'b      x};
   "andi"   : return '{I_TYPE, 7'b0010011, 3'b111, 7'b      x};
-  "slli"   : return '{I_TYPE, 7'b0010011, 3'b001, 7'b0000000};
-  "srli"   : return '{I_TYPE, 7'b0010011, 3'b101, 7'b0000000};
-  "srai"   : return '{I_TYPE, 7'b0010011, 3'b101, 7'b0100000};
+  "slli"   : return '{SHIFTI, 7'b0010011, 3'b001, 7'b0000000};
+  "srli"   : return '{SHIFTI, 7'b0010011, 3'b101, 7'b0000000};
+  "srai"   : return '{SHIFTI, 7'b0010011, 3'b101, 7'b0100000};
   "add"    : return '{R_TYPE, 7'b0110011, 3'b000, 7'b0000000};
   "sub"    : return '{R_TYPE, 7'b0110011, 3'b000, 7'b0100000};
   "sll"    : return '{R_TYPE, 7'b0110011, 3'b001, 7'b0000000};
@@ -94,7 +96,7 @@ function InstDefn inst_table(input string i);
   endcase
 endfunction
 
-function logic [4:0] reg_bits(string i);
+function logic [4:0] regs(string i);
   case (i)
   "x0","zero"     : return  0;
   "x1","ra"       : return  1;
@@ -159,62 +161,10 @@ function InstTokList inst_fmt(InstType t);
   J_TYPE: return '{RD,   IMM,  NONE, NONE};
   FENCE:  return '{PRED, SUCC, NONE, NONE};
   FENCEI: return '{NONE, NONE, NONE, NONE};
-  CSR_T:  return '{RD,   RS2,  CSR,  NONE};
+  CSR_T:  return '{RD,   RS1,  CSR,  NONE};
   CSRI_T: return '{RD,   IMM,  CSR,  NONE};
+  SHIFTI: return '{RD,   RS1,  IMM,  NONE};
   endcase
-endfunction
-
-function [6:0] _opcode(input string i);
-    return inst_table(i).opcode;
-endfunction
-
-function [2:0] _funct3(input string i);
-    return inst_table(i).funct3;
-endfunction
-
-function [6:0] _funct7(input string i);
-    return inst_table(i).funct7;
-endfunction
-
-/* The callX functions return an instruction with the
- * X-type instruction format.
- */
-function logic [31:0] callr(string i, string rd, rs1, rs2);
-    return {_funct7(i), reg_bits(rs2), reg_bits(rs1),
-            _funct3(i), reg_bits(rd), _opcode(i)};
-endfunction
-
-function logic [31:0] calli(string i, string rd, rs1, input [11:0] imm);
-    case (i)
-    "slli","srli","srai":
-        return {_funct7(i), imm[$clog2(`XLEN)-1:0],
-                reg_bits(rs1), _funct3(i), reg_bits(rd), _opcode(i)};
-    default:
-        return {imm, reg_bits(rs1), _funct3(i), reg_bits(rd), _opcode(i)};
-    endcase
-endfunction
-
-function logic [31:0] callcsri
-    (string i, string rd, logic [4:0] imm, logic [11:0] addr);
-    return {addr, imm, _funct3(i), reg_bits(rd), _opcode(i)};
-endfunction
-
-function logic [31:0] calls(string i, string rs2, rs1, logic [11:0] imm);
-    return {imm[11:5], reg_bits(rs2), reg_bits(rs1),
-            _funct3(i), imm[4:0], _opcode(i)};
-endfunction
-
-function logic [31:0] callb(string i, string rs1, rs2, input [12:0] imm);
-    return {imm[12], imm[10:5], reg_bits(rs2), reg_bits(rs1),
-            _funct3(i), imm[4:1], imm[11], _opcode(i)};
-endfunction
-
-function logic [31:0] callu(string i, string rd, logic [31:12] imm);
-    return {imm, reg_bits(rd), _opcode(i)};
-endfunction
-
-function logic [31:0] callj(string i, string rd, input [20:0] imm);
-    return {imm[20], imm[10:1], imm[11], imm[19:12], reg_bits(rd), _opcode(i)};
 endfunction
 
 function bit isspace(byte c);
@@ -271,17 +221,24 @@ function logic [31:0] I(string s);
         end
     end
 
+    //const static logic [31:0] inst_val[InstType] = '{
     case (def.inst_type)
-        R_TYPE: return callr(op, rd, rs1, rs2);
-        I_TYPE: return calli(op, rd, rs1, imm);
-        L_TYPE: return calli(op, rd, rs1, imm);
-        S_TYPE: return calls(op, rs2, rs1, imm);
-        B_TYPE: return callb(op, rs1, rs2, imm);
-        U_TYPE: return callu(op, rd, imm);
-        J_TYPE: return callj(op, rd, imm);
-        FENCE:  return calli(op, "x0", "x0", {4'b0, pred[3:0], succ[3:0]});
-        FENCEI: return calli(op, "x0", "x0", 0);
-        CSR_T:  return calli(op, rd, rs2, csr_addrs[csr]);
-        CSRI_T: return callcsri(op, rd, imm, csr_addrs[csr]);
+    R_TYPE: return {def.fn7, regs(rs2), regs(rs1), def.fn3,
+        regs(rd), def.opcode};
+    I_TYPE: return {imm[11:0], regs(rs1), def.fn3, regs(rd), def.opcode};
+    L_TYPE: return {imm[11:0], regs(rs1), def.fn3, regs(rd), def.opcode};
+    S_TYPE: return {imm[11:5], regs(rs2), regs(rs1), def.fn3,
+        imm[4:0], def.opcode};
+    B_TYPE: return {imm[12], imm[10:5], regs(rs2), regs(rs1),
+        def.fn3, imm[4:1], imm[11], def.opcode};
+    U_TYPE: return {imm[19:0], regs(rd), def.opcode};
+    J_TYPE: return {imm[20], imm[10:1], imm[11], imm[19:12],
+        regs(rd), def.opcode};
+    FENCE:  return {4'b0, pred[3:0], succ[3:0], 13'b0, def.opcode};
+    FENCEI: return {17'b0, 3'b001, 5'b0, def.opcode};
+    CSR_T:  return {csr_addrs[csr], regs(rs1), def.fn3, regs(rd), def.opcode};
+    CSRI_T: return {csr_addrs[csr], imm[4:0], def.fn3, regs(rd), def.opcode};
+    SHIFTI: return {def.fn7, imm[4:0], regs(rs1), def.fn3,
+        regs(rd), def.opcode};
     endcase
 endfunction
