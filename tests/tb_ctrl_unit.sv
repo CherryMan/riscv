@@ -21,7 +21,12 @@
     logic is_load;      \
     logic is_store;     \
     logic is_fence;     \
-    logic is_fencei;
+    logic is_fencei;    \
+    logic is_csr;       \
+    logic csr_zimm;     \
+    logic csr_w;        \
+    logic csr_set;      \
+    logic csr_clr;
 
 `define TEST(n, i) alu_op: 3'bx, default:0, name:n, inst:i
 `define TESTR(n) `TEST(n, callr(n, "x0", "x0", "x0"))
@@ -83,6 +88,13 @@ localparam  struct {
 
 ,'{`TESTI("fence"),  is_fence:1}  // TODO: still noop
 ,'{`TESTI("fencei"), is_fencei:1} // TODO: still noop
+
+,'{`TESTI("csrrw"),  rd_w:1, is_csr:1, csr_w:1}
+,'{`TESTI("csrrs"),  rd_w:1, is_csr:1, csr_set:1}
+,'{`TESTI("csrrc"),  rd_w:1, is_csr:1, csr_clr:1}
+,'{`TESTI("csrrwi"), rd_w:1, is_csr:1, csr_w:1,   csr_zimm:1}
+,'{`TESTI("csrrsi"), rd_w:1, is_csr:1, csr_set:1, csr_zimm:1}
+,'{`TESTI("csrrci"), rd_w:1, is_csr:1, csr_clr:1, csr_zimm:1}
 };
 `undef TEST
 `undef TESTR
@@ -107,8 +119,8 @@ module tb_CtrlUnit;
 
       // If the variable is eq to 'x, it is treated as a don't care,
       // and thus ignored.
-      `define CHECK(s) if (tests[testnum].``s !== 'x) \
-        `CHECK_EQUAL(``s, tests[testnum].``s);
+      `define CHECK(s) \
+        if (tests[testnum].``s !== 'x) `CHECK_EQUAL(``s, tests[testnum].``s);
 
         `CHECK(alu_op);
         `CHECK(alu_imm);
@@ -122,6 +134,11 @@ module tb_CtrlUnit;
         `CHECK(is_jmp);
         `CHECK(is_load);
         `CHECK(is_store);
+        `CHECK(is_csr);
+        `CHECK(csr_zimm);
+        `CHECK(csr_w);
+        `CHECK(csr_set);
+        `CHECK(csr_clr);
       `undef CHECK
     endtask
 

@@ -13,9 +13,11 @@ typedef enum {
     // to the offset.
     L_TYPE,
 
-    // Special types for fence instructions
+    // Special types for fence/csr instructions
     FENCE,
     FENCEI,
+    CSR_T,
+    CSRI_T,
 
     R_TYPE,
     I_TYPE,
@@ -26,7 +28,7 @@ typedef enum {
 } InstType;
 
 typedef enum {
-    NONE, RD, RS1, RS2, IMM, OFFS, PRED, SUCC
+    NONE, RD, RS1, RS2, IMM, OFFS, PRED, SUCC, CSR
 } InstTok;
 
 typedef InstTok InstTokList [0:3];
@@ -83,6 +85,12 @@ function InstDefn inst_table(input string i);
   "and"    : return '{R_TYPE, 7'b0110011, 3'b111, 7'b0000000};
   "fence"  : return '{FENCE,  7'b0001111, 3'b000, 7'b      x};
   "fencei" : return '{FENCEI, 7'b0001111, 3'b001, 7'b      x};
+  "csrrw"  : return '{CSR_T,  7'b1110011, 3'b001, 7'b      x};
+  "csrrs"  : return '{CSR_T,  7'b1110011, 3'b010, 7'b      x};
+  "csrrc"  : return '{CSR_T,  7'b1110011, 3'b011, 7'b      x};
+  "csrrwi" : return '{CSRI_T, 7'b1110011, 3'b101, 7'b      x};
+  "csrrsi" : return '{CSRI_T, 7'b1110011, 3'b110, 7'b      x};
+  "csrrci" : return '{CSRI_T, 7'b1110011, 3'b111, 7'b      x};
   endcase
 endfunction
 
@@ -124,6 +132,22 @@ function logic [4:0] reg_bits(string i);
   endcase
 endfunction
 
+bit [11:0] csr_addrs[string] = '{
+    "mvendorid" : 'hf11,
+    "marchid"   : 'hf12,
+    "mimpid"    : 'hf13,
+    "mhartid"   : 'hf14,
+    "mstatus"   : 'h300,
+    "misa"      : 'h301,
+    "mie"       : 'h304,
+    "mtvec"     : 'h305,
+    "mscratch"  : 'h340,
+    "mepc"      : 'h341,
+    "mcause"    : 'h342,
+    "mtval"     : 'h343,
+    "mip"       : 'h344
+};
+
 function InstTokList inst_fmt(InstType t);
   case (t)
   L_TYPE: return '{RD,   OFFS, RS1,  NONE};
@@ -135,6 +159,8 @@ function InstTokList inst_fmt(InstType t);
   J_TYPE: return '{RD,   IMM,  NONE, NONE};
   FENCE:  return '{PRED, SUCC, NONE, NONE};
   FENCEI: return '{NONE, NONE, NONE, NONE};
+  CSR_T:  return '{RD,   RS2,  CSR,  NONE};
+  CSRI_T: return '{RD,   IMM,  CSR,  NONE};
   endcase
 endfunction
 
@@ -168,6 +194,11 @@ function logic [31:0] calli(string i, string rd, rs1, input [11:0] imm);
     endcase
 endfunction
 
+function logic [31:0] callcsri
+    (string i, string rd, logic [4:0] imm, logic [11:0] addr);
+    return {addr, imm, _funct3(i), reg_bits(rd), _opcode(i)};
+endfunction
+
 function logic [31:0] calls(string i, string rs2, rs1, logic [11:0] imm);
     return {imm[11:5], reg_bits(rs2), reg_bits(rs1),
             _funct3(i), imm[4:0], _opcode(i)};
@@ -196,7 +227,7 @@ function logic [31:0] I(string s);
     InstDefn def;
     InstTokList tl;
     string tok;
-    string op, rd, rs1, rs2;
+    string op, rd, rs1, rs2, csr;
     integer imm, pred, succ;
     int i, j, t;
 
@@ -225,6 +256,7 @@ function logic [31:0] I(string s);
                     OFFS: imm  = tok.atoi();
                     PRED: pred = tok.atoi();
                     SUCC: succ = tok.atoi();
+                    CSR:  csr  = tok;
                 endcase
 
                 if (tl[t] == OFFS)
@@ -249,5 +281,7 @@ function logic [31:0] I(string s);
         J_TYPE: return callj(op, rd, imm);
         FENCE:  return calli(op, "x0", "x0", {4'b0, pred[3:0], succ[3:0]});
         FENCEI: return calli(op, "x0", "x0", 0);
+        CSR_T:  return calli(op, rd, rs2, csr_addrs[csr]);
+        CSRI_T: return callcsri(op, rd, imm, csr_addrs[csr]);
     endcase
 endfunction

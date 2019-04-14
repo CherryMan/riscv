@@ -200,6 +200,38 @@ module tb_CPU;
             `assert_mem_b(2, 1);
             `assert_mem_b(3, 1);
         end
+
+        `TEST_CASE("csr read/write") begin
+            rom = '{
+                I("addi x1, x0, 25"),
+
+                I("csrrw x0, x1, mscratch"),
+                I("csrrw x2, x0, mscratch"),
+
+                I("csrrw x0, x1, mepc"),
+                I("csrrw x3, x0, mepc"),
+
+                I("csrrwi x0, 23, mscratch"),
+                I("csrrwi x4,  0, mscratch"),
+
+                I("csrrwi x0, 14, mscratch"),
+                I("csrrsi x5,  1, mscratch"),
+                I("csrrci x6,  2, mscratch"),
+
+                I("sw x2,  0(x0)"),
+                I("sw x3,  4(x0)"),
+                I("sw x4,  8(x0)"),
+                I("sw x5, 16(x0)"),
+                I("sw x6, 32(x0)")
+            };
+            run();
+
+            `assert_mem_w(0,  25);
+            `assert_mem_w(4,  24);
+            `assert_mem_w(8,  23);
+            `assert_mem_w(16, 15);
+            `assert_mem_w(32, 12);
+        end
     end
 
     `WATCHDOG(1ms);

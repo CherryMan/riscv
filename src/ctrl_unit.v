@@ -1,13 +1,14 @@
 module CtrlUnit
  #( parameter XLEN = 32
- )( input      [XLEN-1:0] inst
-  , output     [2:0]      alu_op
-  , output                alu_imm
-  , output                alu_sub, alu_sra
-  , output                rd_w
-  , output                ld_upper, add_pc, jmp_reg
-  , output                is_branch, is_jmp, is_load, is_store
-  , output                is_fence, is_fencei
+ )( input  [XLEN-1:0] inst
+  , output [2:0]      alu_op
+  , output            alu_imm
+  , output            alu_sub, alu_sra
+  , output            rd_w
+  , output            ld_upper, add_pc, jmp_reg
+  , output            is_branch, is_jmp, is_load, is_store
+  , output            is_fence, is_fencei, is_csr
+  , output            csr_zimm, csr_w, csr_set, csr_clr
  );
 
     wire [6:0] opcode = inst[6:0];
@@ -51,7 +52,10 @@ module CtrlUnit
     assign alu_sra   = (op_op || op_opimm) &&
                        (fn3 == 3'b101) && (fn7 == 7'b0100000);
 
-    assign rd_w      = |{inst_type_r, inst_type_i, inst_type_u, inst_type_j};
+    assign rd_w      = |{
+        inst_type_r, inst_type_i, inst_type_u, inst_type_j,
+        is_csr
+    };
     assign ld_upper  = op_lui;
     assign add_pc    = op_auipc;
     assign jmp_reg   = op_jalr && (fn3 == 3'b000);
@@ -63,4 +67,10 @@ module CtrlUnit
 
     assign is_fence  = op_miscmem && (fn3 == 3'b000); // TODO: currently noop
     assign is_fencei = op_miscmem && (fn3 == 3'b001); // TODO: currently noop
+
+    assign is_csr    = op_system && (fn3 != 3'b000);
+    assign csr_zimm  = is_csr && fn3[2];
+    assign csr_w     = is_csr && fn3[1:0] == 2'b01;
+    assign csr_set   = is_csr && fn3[1:0] == 2'b10;
+    assign csr_clr   = is_csr && fn3[1:0] == 2'b11;
 endmodule
