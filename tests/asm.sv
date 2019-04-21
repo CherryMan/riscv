@@ -18,6 +18,7 @@ typedef enum {
     FENCEI,
     CSR_T,
     CSRI_T,
+    PRIV,
 
     SHIFTI,
 
@@ -93,6 +94,17 @@ function InstDefn inst_table(input string i);
   "csrrwi" : return '{CSRI_T, 7'b1110011, 3'b101, 7'b      x};
   "csrrsi" : return '{CSRI_T, 7'b1110011, 3'b110, 7'b      x};
   "csrrci" : return '{CSRI_T, 7'b1110011, 3'b111, 7'b      x};
+  "ecall"  : return '{PRIV,   7'b1110011, 3'b000, 7'b0000000};
+  "ebreak" : return '{PRIV,   7'b1110011, 3'b000, 7'b0000000};
+  "mret"   : return '{PRIV,   7'b1110011, 3'b000, 7'b0000000};
+  endcase
+endfunction
+
+function bit [11:0] priv_inst_table(string s);
+  case(s)
+  "ecall" : return 12'b000000000000;
+  "ebreak": return 12'b000000000001;
+  "mret"  : return 12'b001100000010;
   endcase
 endfunction
 
@@ -163,6 +175,7 @@ function InstTokList inst_fmt(InstType t);
   FENCEI: return '{NONE, NONE, NONE, NONE};
   CSR_T:  return '{RD,   RS1,  CSR,  NONE};
   CSRI_T: return '{RD,   IMM,  CSR,  NONE};
+  PRIV:   return '{NONE, NONE, NONE, NONE};
   SHIFTI: return '{RD,   RS1,  IMM,  NONE};
   endcase
 endfunction
@@ -183,7 +196,7 @@ function logic [31:0] I(string s);
 
     i = 0;
     while (isspace(s[i])) ++i;
-    for (j = i+1; !isspace(s[j]); ++j);
+    for (j = i+1; !isspace(s[j]) && j < s.len; ++j);
 
     op  = s.substr(i, j-1);
     def = inst_table(op);
@@ -221,7 +234,6 @@ function logic [31:0] I(string s);
         end
     end
 
-    //const static logic [31:0] inst_val[InstType] = '{
     case (def.inst_type)
     R_TYPE: return {def.fn7, regs(rs2), regs(rs1), def.fn3,
         regs(rd), def.opcode};
@@ -238,6 +250,7 @@ function logic [31:0] I(string s);
     FENCEI: return {17'b0, 3'b001, 5'b0, def.opcode};
     CSR_T:  return {csr_addrs[csr], regs(rs1), def.fn3, regs(rd), def.opcode};
     CSRI_T: return {csr_addrs[csr], imm[4:0], def.fn3, regs(rd), def.opcode};
+    PRIV:   return {priv_inst_table(op), 5'b0, def.fn3, 5'b0, def.opcode};
     SHIFTI: return {def.fn7, imm[4:0], regs(rs1), def.fn3,
         regs(rd), def.opcode};
     endcase

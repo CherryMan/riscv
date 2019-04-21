@@ -12,6 +12,10 @@ module tb_CSRs;
     logic [11:0]     csr_addr;
     logic [XLEN-1:0] csr_din, csr_dout;
 
+    logic            exc_ecall, exc_break, is_mret;
+    logic            trap_pc;
+    logic [XLEN-1:0] pc_now, pc_trap;
+
     bit [XLEN-1:0]   n;
 
     `CLK_CREATE(clk);
@@ -32,7 +36,7 @@ module tb_CSRs;
       "marchid"   :'{'0, '0},
       "mimpid"    :'{'0, '0},
       "mhartid"   :'{'0, '0},
-      "mstatus"   :'{'0, { 19'b0, 2'b11, 7'b0, 1'b1, 3'b0}},
+      "mstatus"   :'{{28'b0, 1'b1, 3'b0}, { 19'b0, 2'b11, 11'b0}},
       "misa"      :'{'0, { 2'b1, {(XLEN-3-25){1'b0}}, 17'b0, 1'b1, 8'b0}},
       "mie"       :'{{ {XLEN-1-12{1'b0}}, 1'b1, 3'b0, 1'b1, 3'b0, 1'b1, 3'b0}, '0},
       "mtvec"     :'{'0, '0}, // special case
@@ -45,6 +49,10 @@ module tb_CSRs;
 
     `TEST_SUITE begin
         `TEST_CASE_SETUP begin
+            exc_ecall = 0;
+            exc_break = 0;
+            is_mret   = 0;
+
             csr_w = 0;
             rstl = 0;
             #1 rstl = 1;
@@ -52,9 +60,15 @@ module tb_CSRs;
         end
 
         `TEST_CASE("reset behaviour") begin
+            rstl = 0;
+            #1 rstl = 1;
+
             csr_addr = csr_addrs["mcause"];
-            $display("addr: %h", csr_addr);
             #1 `CHECK_EQUAL(csr_dout, 0);
+
+            // Only MPP == 11, MIE is cleared
+            csr_addr = csr_addrs["mstatus"];
+            #1 `CHECK_EQUAL(csr_dout, {19'b0, 2'b11, 11'b0});
         end
 
         `TEST_CASE("csr read/write behaviour") begin
@@ -87,14 +101,49 @@ module tb_CSRs;
 
                     // If not a specific case, just apply the masks and
                     // set necessary bits to one.
-                    default:
+                    default: begin
                         n = (n & csr_masks[a].mask) | csr_masks[a].set;
+                    end
                     endcase
 
                     #1 `CHECK_EQUAL(csr_dout, n,
                         $sformatf("CSR: %s at 0x%h", a, csr_addrs[a]));
+
+                    // Reset the CSR every time to avoid effects from
+                    // CSR state.
+                    rstl = 0;
+                    #1 rstl = 1;
+                    #1 `CLK_INIT(clk);
                 end
             end
+        end
+
+        `TEST_CASE("trap execution and return") begin
+            n = $random & ~1; // set LSB to 0
+            pc_now = $random;
+
+            csr_addr = csr_addrs["mtvec"];
+            csr_din  = n & ~1;
+            csr_w    = 1;
+            `CYCLE_CLK;
+
+            csr_w = 0;
+            exc_ecall = 1;
+            #1 `CHECK_EQUAL(trap_pc, 1);
+               `CHECK_EQUAL(pc_trap, n);
+
+            exc_ecall = 0;
+            exc_break = 1;
+            #1 `CHECK_EQUAL(trap_pc, 1);
+               `CHECK_EQUAL(pc_trap, n);
+
+            `CYCLE_CLK; // trigger trap
+            exc_break = 0;
+            csr_addr = csr_addrs["mepc"];
+            #1 `CHECK_EQUAL(csr_dout, pc_now);
+
+            is_mret = 1;
+            #1 `CHECK_EQUAL(pc_trap, pc_now + 4);
         end
     end
 endmodule

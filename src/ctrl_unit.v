@@ -8,12 +8,17 @@ module CtrlUnit
   , output            ld_upper, add_pc, jmp_reg
   , output            is_branch, is_jmp, is_load, is_store
   , output            is_fence, is_fencei, is_csr
+  , output            is_mret
+  , output            exc_ecall, exc_break
   , output            csr_zimm, csr_w, csr_set, csr_clr
  );
 
-    wire [6:0] opcode = inst[6:0];
-    wire [2:0] fn3    = inst[14:12];
-    wire [6:0] fn7    = inst[31:25];
+    wire [6:0]  opcode = inst[6:0];
+    wire [2:0]  fn3    = inst[14:12];
+    wire [6:0]  fn7    = inst[31:25];
+    wire [11:0] fn12   = inst[31:20];
+    wire [4:0]  rd     = inst[11:7];
+    wire [4:0]  rs1    = inst[19:15];
 
     wire
       op_lui     = (7'b0110111 == opcode),
@@ -67,6 +72,11 @@ module CtrlUnit
 
     assign is_fence  = op_miscmem && (fn3 == 3'b000); // TODO: currently noop
     assign is_fencei = op_miscmem && (fn3 == 3'b001); // TODO: currently noop
+
+    wire   is_priv   = op_system && rs1 == 0 && fn3 == 0 && rd == 0;
+    assign exc_ecall = is_priv && fn12 == 12'b000000000000;
+    assign exc_break = is_priv && fn12 == 12'b000000000001;
+    assign is_mret   = is_priv && fn12 == 12'b001100000010;
 
     assign is_csr    = op_system && (fn3 != 3'b000);
     assign csr_zimm  = is_csr && fn3[2];

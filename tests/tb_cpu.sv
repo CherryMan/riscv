@@ -232,6 +232,24 @@ module tb_CPU;
             `assert_mem_w(16, 15);
             `assert_mem_w(32, 12);
         end
+
+        `TEST_CASE("exception trap and return") begin
+            rom = '{
+            /*00*/I("addi x2, x0, 5"), // magic number
+
+            /*04*/I("addi x1, x0, 20"),
+            /*08*/I("csrrw x0, x1, mtvec"),
+            /*12*/I("ecall"),
+            /*16*/I("jal x0, 28"), // jump to end
+            /*20*/I("sw x2, 0(x0)"),
+            /*24*/I("mret"),
+
+            /*28*/I("addi x0, x0, 0") // nop
+            };
+            run();
+
+            `assert_mem_w(0, 5);
+        end
     end
 
     `WATCHDOG(1ms);

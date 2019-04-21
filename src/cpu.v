@@ -35,8 +35,14 @@ module CPU
     // -- Subunit wiring
     wire rd_w, ld_upper, add_pc, jmp_reg;
     wire is_branch, is_jmp, is_load, is_store;
+    wire exc_ecall, exc_break;
+    wire is_mret;
     wire is_fence, is_fencei, is_csr;
-    wire [XLEN-1:0] pc_next, load_data;
+    wire [XLEN-1:0] load_data;
+
+    wire trap_pc;
+    wire [XLEN-1:0] pc_ifu, pc_trap;
+    reg  [XLEN-1:0] pc_next;
 
     wire [2:0] alu_op;
     wire alu_imm, alu_sub, alu_sra;
@@ -82,6 +88,8 @@ module CPU
        .is_branch(is_branch), .is_jmp(is_jmp),
        .is_load(is_load), .is_store(is_store),
        .is_fence(is_fence), .is_fencei(is_fencei), .is_csr(is_csr),
+       .is_mret(is_mret),
+       .exc_ecall(exc_ecall), .exc_break(exc_break),
        .csr_zimm(csr_zimm),
        .csr_w(csr_w), .csr_set(csr_set), .csr_clr(csr_clr));
 
@@ -99,12 +107,21 @@ module CPU
       (.is_branch(is_branch), .is_jmp(is_jmp), .jmp_reg(jmp_reg),
        .eq(eq), .lt(lt), .ltu(ltu),
        .fn3(fn3), .alu_out(alu_out), .b_imm(b_imm), .j_imm(j_imm),
-       .pc(pc), .pc_next(pc_next), .rstl(rstl));
+       .pc(pc), .pc_ifu(pc_ifu));
 
    CSRs #(XLEN) csr
      (.clk(clk), .rstl(rstl),
+      .trap_pc(trap_pc), .pc_trap(pc_trap), .pc_now(pc),
       .csr_addr(csr_addr), .csr_w(csr_w),
+      .exc_ecall(exc_ecall), .exc_break(exc_break),
+      .is_mret(is_mret),
       .csr_din(csr_din), .csr_dout(csr_dout));
+
+    always @(rstl)
+        if (!rstl) pc_next = 'b0;
+
+    always @*
+        pc_next = trap_pc ? pc_trap : pc_ifu;
 
     always @(posedge clk) begin
         inst <= rom_data;

@@ -23,6 +23,9 @@
     logic is_fence;     \
     logic is_fencei;    \
     logic is_csr;       \
+    logic is_mret;      \
+    logic exc_ecall;    \
+    logic exc_break;    \
     logic csr_zimm;     \
     logic csr_w;        \
     logic csr_set;      \
@@ -31,6 +34,7 @@
 `define TEST(n, i) alu_op: 3'bx, default:0, name:n, inst:i
 `define T_REG(n) `TEST(n, I({n, " x0, x0, x0"}))
 `define T_IMM(n) `TEST(n, I({n, " x0, x0, 0"}))
+`define T_PRV(n) `TEST(n, I({n}))
 `define T_MEM(n) `TEST(n, I({n, " x0, 0(x0)"}))
 `define T_U(n) `TEST(n, I({n, " x0, 0"}))
 `define T_CSR(n) `TEST(n, I({n, " x0, x0, mscratch"}))
@@ -89,6 +93,10 @@ const struct {
 ,'{`T_IMM("fence"),  is_fence:1}  // TODO: still noop
 ,'{`T_IMM("fencei"), is_fencei:1} // TODO: still noop
 
+,'{`T_PRV("mret"),   is_mret:1}
+,'{`T_PRV("ecall"),  exc_ecall:1}
+,'{`T_PRV("ebreak"), exc_break:1}
+
 ,'{`T_CSR("csrrw"),   rd_w:1, is_csr:1, csr_w:1}
 ,'{`T_CSR("csrrs"),   rd_w:1, is_csr:1, csr_set:1}
 ,'{`T_CSR("csrrc"),   rd_w:1, is_csr:1, csr_clr:1}
@@ -135,6 +143,9 @@ module tb_CtrlUnit;
         `CHECK(is_load);
         `CHECK(is_store);
         `CHECK(is_csr);
+        `CHECK(is_mret);
+        `CHECK(exc_ecall);
+        `CHECK(exc_break);
         `CHECK(csr_zimm);
         `CHECK(csr_w);
         `CHECK(csr_set);
