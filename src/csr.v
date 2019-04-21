@@ -106,18 +106,14 @@ module CSRs
 
     // -- CSR Read and Write logic
 
-    // Reset
-    always @* begin
-        if (!rstl) begin
-            mcause_interr = 0;
-            mcause_code   = 0;
-            mstatus_mie   = 0;
-        end
-    end
-
     // CSR Write/Reset logic
-    always @(posedge clk) begin
-      if (trap_exe) begin // if there's a trap
+    always @(posedge clk or negedge rstl) begin
+      if (!rstl) begin
+        mcause_interr <= 0;
+        mcause_code   <= 0;
+        mstatus_mie   <= 0;
+      end
+      else if (trap_exe) begin // if there's a trap
         mepc <= pc_now;
 
         mcause_interr <= is_int;

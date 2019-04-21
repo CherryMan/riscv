@@ -56,8 +56,8 @@ module tb_CPU;
     endtask
 
     task run();
-        rstl = 1;
-        #1 rstl = 0;
+        rstl = 0;
+        #1 rstl = 1;
         #1 `CLK_INIT(clk);
 
         // TODO: Detect end based on syscall? There must be a better way
